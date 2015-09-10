@@ -1,3 +1,4 @@
 # Encrypted
 
-Encrypted peer for the Tinzenite network.
+Encrypted peer library for the Tinzenite network.
+For an example program utilizing this, see Tinzenite/Server.
