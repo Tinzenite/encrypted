@@ -2,6 +2,9 @@ package encrypted
 
 import "github.com/tinzenite/channel"
 
+/*
+Encrypted is the object which is used to control the encrypted Tinzenite peer.
+*/
 type Encrypted struct {
 	// root path
 	path string

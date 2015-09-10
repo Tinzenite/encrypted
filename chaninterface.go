@@ -9,3 +9,5 @@ func createChanInterface(enc *Encrypted) *chaninterface {
 	return &chaninterface{
 		enc: enc}
 }
+
+// TODO implement channel callbacks
