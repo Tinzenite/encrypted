@@ -10,4 +10,18 @@ func createChanInterface(enc *Encrypted) *chaninterface {
 		enc: enc}
 }
 
-// TODO implement channel callbacks
+// ----------------------- Callbacks ------------------------------
+
+func (c *chaninterface) OnNewConnection(address, message string) {}
+
+func (c *chaninterface) OnMessage(address, message string) {}
+
+func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
+	return false, ""
+}
+
+func (c *chaninterface) OnFileReceived(address, path, name string) {}
+
+func (c *chaninterface) OnFileCanceled(address, path string) {}
+
+func (c *chaninterface) OnConnected(address string) {}
