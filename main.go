@@ -33,7 +33,7 @@ func Create(path, peerName string) (*Encrypted, error) {
 	// build
 	encrypted := &Encrypted{
 		rootPath: path} // rootPath for storing root
-	// prepare chninterface
+	// prepare chaninterface
 	encrypted.cInterface = createChanInterface(encrypted)
 	// build channel
 	channel, err := channel.Create(peerName, nil, encrypted.cInterface)
@@ -55,11 +55,19 @@ func Create(path, peerName string) (*Encrypted, error) {
 		return nil, err
 	}
 	encrypted.peer = peer
+	// run background stuff
+	encrypted.wg.Add(1)
+	encrypted.stop = make(chan bool, 1)
+	go encrypted.run()
 	// return instance
 	return encrypted, nil
 }
 
 /*
 Load returns the Encrypted structure for an existing instance.
+
+TODO write
 */
-func Load() {}
+func Load(path string) (*Encrypted, error) {
+	return nil, shared.ErrUnsupported
+}

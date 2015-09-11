@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/tinzenite/channel"
 	"github.com/tinzenite/shared"
@@ -17,6 +20,8 @@ type Encrypted struct {
 	peer       *shared.Peer
 	cInterface *chaninterface
 	channel    *channel.Channel
+	wg         sync.WaitGroup
+	stop       chan bool
 }
 
 /*
@@ -37,7 +42,29 @@ func (enc *Encrypted) Name() string {
 Close cleanly closes everything.
 */
 func (enc *Encrypted) Close() {
+	enc.stop <- true
+	enc.wg.Wait()
 	enc.channel.Close()
+}
+
+/*
+run is the background thread for keeping everything running.
+*/
+func (enc *Encrypted) run() {
+	defer func() { enc.log("Background process stopped.") }()
+	updateTicker := time.Tick(15 * time.Second)
+	for {
+		select {
+		case <-enc.stop:
+			enc.wg.Done()
+			return
+		case <-updateTicker:
+			err := enc.updatePeers()
+			if err != nil {
+				enc.warn("Failed to update peers:", err.Error())
+			}
+		}
+	}
 }
 
 /*
@@ -71,4 +98,22 @@ func (enc *Encrypted) updatePeers() error {
 		_ = enc.channel.AcceptConnection(peer.Address)
 	}
 	return nil
+}
+
+/*
+Log function.
+*/
+func (enc *Encrypted) log(msg ...string) {
+	toPrint := []string{"Encrypted:"}
+	toPrint = append(toPrint, msg...)
+	log.Println(strings.Join(toPrint, " "))
+}
+
+/*
+Warn function.
+*/
+func (enc *Encrypted) warn(msg ...string) {
+	toPrint := []string{"Encrypted:", "WARNING:"}
+	toPrint = append(toPrint, msg...)
+	log.Println(strings.Join(toPrint, " "))
 }
