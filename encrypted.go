@@ -6,10 +6,22 @@ import "github.com/tinzenite/channel"
 Encrypted is the object which is used to control the encrypted Tinzenite peer.
 */
 type Encrypted struct {
-	// root path
-	path string
-	// internal hidden struct for channel callbacks
+	path       string
+	selfName   string
 	cInterface *chaninterface
-	// tox communication channel
-	channel *channel.Channel
+	channel    *channel.Channel
+}
+
+/*
+Address returns this peers full address.
+*/
+func (enc *Encrypted) Address() (string, error) {
+	return enc.channel.ConnectionAddress()
+}
+
+/*
+Name returns this peers name.
+*/
+func (enc *Encrypted) Name() string {
+	return enc.selfName
 }
