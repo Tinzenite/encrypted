@@ -1,5 +1,7 @@
 package encrypted
 
+import "log"
+
 type chaninterface struct {
 	// reference back to encrypted
 	enc *Encrypted
@@ -12,16 +14,27 @@ func createChanInterface(enc *Encrypted) *chaninterface {
 
 // ----------------------- Callbacks ------------------------------
 
-func (c *chaninterface) OnNewConnection(address, message string) {}
+func (c *chaninterface) OnFriendRequest(address, message string) {
+	log.Println("NewConnection:", address[:8], "ignoring!")
+}
 
-func (c *chaninterface) OnMessage(address, message string) {}
+func (c *chaninterface) OnMessage(address, message string) {
+	log.Println("Received:", message)
+}
 
 func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
+	log.Println("Disallowing all file transfers for now.")
 	return false, ""
 }
 
-func (c *chaninterface) OnFileReceived(address, path, name string) {}
+func (c *chaninterface) OnFileReceived(address, path, name string) {
+	log.Println("OnFileReceived")
+}
 
-func (c *chaninterface) OnFileCanceled(address, path string) {}
+func (c *chaninterface) OnFileCanceled(address, path string) {
+	log.Println("OnFileCanceled")
+}
 
-func (c *chaninterface) OnConnected(address string) {}
+func (c *chaninterface) OnConnected(address string) {
+	log.Println("Connected:", address[:8])
+}
