@@ -19,21 +19,20 @@ func Create(path, peerName string) (*Encrypted, error) {
 	}
 	// flag whether we need to clen up after us
 	var failed bool
-	// make dot Tinzenite
-	err := shared.MakeDotTinzenite(path)
+	// make org directory
+	err := shared.MakeDirectories(path, shared.ORGDIR, shared.ORGDIR+"/"+shared.PEERSDIR)
 	if err != nil {
 		return nil, err
 	}
 	// if failed was set --> clean up by removing everything
 	defer func() {
 		if failed {
-			shared.RemoveDotTinzenite(path)
+			shared.RemoveDirContents(path)
 		}
 	}()
 	// build
 	encrypted := &Encrypted{
-		path:     path,
-		selfName: peerName}
+		rootPath: path} // rootPath for storing root
 	// prepare chninterface
 	encrypted.cInterface = createChanInterface(encrypted)
 	// build channel
@@ -43,6 +42,19 @@ func Create(path, peerName string) (*Encrypted, error) {
 		return nil, err
 	}
 	encrypted.channel = channel
+	// get address for peer
+	address, err := encrypted.channel.Address()
+	if err != nil {
+		failed = true
+		return nil, err
+	}
+	// make peer (at correct location!)
+	peer, err := shared.CreatePeer(peerName, address)
+	if err != nil {
+		failed = true
+		return nil, err
+	}
+	encrypted.peer = peer
 	// return instance
 	return encrypted, nil
 }
