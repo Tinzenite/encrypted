@@ -48,8 +48,8 @@ func Create(path, peerName string) (*Encrypted, error) {
 		failed = true
 		return nil, err
 	}
-	// make peer (at correct location!)
-	peer, err := shared.CreatePeer(peerName, address)
+	// make peer with name, address, and set to encrypted
+	peer, err := shared.CreatePeer(peerName, address, true)
 	if err != nil {
 		failed = true
 		return nil, err
