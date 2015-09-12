@@ -16,8 +16,8 @@ import (
 Encrypted is the object which is used to control the encrypted Tinzenite peer.
 */
 type Encrypted struct {
-	rootPath   string
-	peer       *shared.Peer
+	RootPath   string
+	Peer       *shared.Peer
 	cInterface *chaninterface
 	channel    *channel.Channel
 	wg         sync.WaitGroup
@@ -35,7 +35,7 @@ func (enc *Encrypted) Address() (string, error) {
 Name returns this peers name.
 */
 func (enc *Encrypted) Name() string {
-	return enc.peer.Name
+	return enc.Peer.Name
 }
 
 /*
@@ -52,7 +52,8 @@ run is the background thread for keeping everything running.
 */
 func (enc *Encrypted) run() {
 	defer func() { enc.log("Background process stopped.") }()
-	updateTicker := time.Tick(15 * time.Second)
+	// update peers once every minute
+	updateTicker := time.Tick(1 * time.Minute)
 	for {
 		select {
 		case <-enc.stop:
@@ -72,7 +73,7 @@ updatePeers should be called regularily to allow the connection of new peers.
 */
 func (enc *Encrypted) updatePeers() error {
 	// load peers from ORGDIR
-	path := enc.rootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR
+	path := enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR
 	peersFiles, err := ioutil.ReadDir(path)
 	if err != nil {
 		return err

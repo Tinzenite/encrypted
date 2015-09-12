@@ -1,6 +1,11 @@
 package encrypted
 
-import "log"
+import (
+	"encoding/json"
+	"log"
+
+	"github.com/tinzenite/shared"
+)
 
 type chaninterface struct {
 	// reference back to encrypted
@@ -23,8 +28,38 @@ func (c *chaninterface) OnFriendRequest(address, message string) {
 }
 
 func (c *chaninterface) OnMessage(address, message string) {
-	// TODO check if lock message, or request, or send message
-	log.Println("Received:", message)
+	// check if lock message, or request, or send message
+	v := &shared.Message{}
+	err := json.Unmarshal([]byte(message), v)
+	if err == nil {
+		switch msgType := v.Type; msgType {
+		case shared.MsgLock:
+			log.Println("TODO: received lock message!")
+		case shared.MsgRequest:
+			log.Println("TODO: received request message!")
+		case shared.MsgPush:
+			log.Println("TODO received push message!")
+		default:
+			log.Println("WARNING: Unknown object received:", msgType.String())
+		}
+		// in any case return as we are done
+		return
+	}
+	// if unmarshal didn't work check for plain commands:
+	// TODO these are temporary until it works, remove them later
+	switch message {
+	case "push":
+		log.Println("Sending example push message.")
+		pm := shared.CreatePushMessage("identification", shared.OtObject)
+		c.enc.channel.Send(address, pm.JSON())
+	case "lock":
+		log.Println("Sending example lock message.")
+		lm := shared.CreateLockMessage(shared.LoRequest)
+		c.enc.channel.Send(address, lm.JSON())
+	default:
+		log.Println("Received:", message)
+		c.enc.channel.Send(address, "Received non JSON message.")
+	}
 }
 
 func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {

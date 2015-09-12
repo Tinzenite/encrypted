@@ -32,7 +32,7 @@ func Create(path, peerName string) (*Encrypted, error) {
 	}()
 	// build
 	encrypted := &Encrypted{
-		rootPath: path} // rootPath for storing root
+		RootPath: path} // rootPath for storing root
 	// prepare chaninterface
 	encrypted.cInterface = createChanInterface(encrypted)
 	// build channel
@@ -54,7 +54,7 @@ func Create(path, peerName string) (*Encrypted, error) {
 		failed = true
 		return nil, err
 	}
-	encrypted.peer = peer
+	encrypted.Peer = peer
 	// run background stuff
 	encrypted.wg.Add(1)
 	encrypted.stop = make(chan bool, 1)
