@@ -47,8 +47,7 @@ func (c *chaninterface) OnMessage(address, message string) {
 				log.Println("OnMessage: failed to parse JSON!", err)
 				return
 			}
-			// TODO on success hand off to logic NOTE: put in own file?
-			log.Println("TODO: received lock message!", msg.String())
+			c.handleLockMessage(address, msg)
 		case shared.MsgRequest:
 			msg := &shared.RequestMessage{}
 			err := json.Unmarshal([]byte(message), msg)
@@ -56,8 +55,7 @@ func (c *chaninterface) OnMessage(address, message string) {
 				log.Println("OnMessage: failed to parse JSON!", err)
 				return
 			}
-			// TODO on success hand off to logic NOTE: put in own file?
-			log.Println("TODO: received request message!", msg.String())
+			c.handleRequestMessage(address, msg)
 		case shared.MsgPush:
 			msg := &shared.PushMessage{}
 			err := json.Unmarshal([]byte(message), msg)
@@ -65,12 +63,11 @@ func (c *chaninterface) OnMessage(address, message string) {
 				log.Println("OnMessage: failed to parse JSON!", err)
 				return
 			}
-			// TODO on success hand off to logic NOTE: put in own file?
-			log.Println("TODO received push message!", msg.String())
+			c.handlePushMessage(address, msg)
 		default:
 			log.Println("WARNING: Unknown object received:", msgType.String())
 		}
-		// in any case return as we are done
+		// in any case return as we are done handling them
 		return
 	}
 	// if unmarshal didn't work check for plain commands:
@@ -78,12 +75,16 @@ func (c *chaninterface) OnMessage(address, message string) {
 	switch message {
 	case "push":
 		log.Println("Sending example push message.")
-		pm := shared.CreatePushMessage("identification", shared.OtObject)
+		pm := shared.CreatePushMessage("ID_HERE", shared.OtObject)
 		c.enc.channel.Send(address, pm.JSON())
 	case "lock":
 		log.Println("Sending example lock message.")
 		lm := shared.CreateLockMessage(shared.LoRequest)
 		c.enc.channel.Send(address, lm.JSON())
+	case "request":
+		log.Println("Sending example request message.")
+		rm := shared.CreateRequestMessage(shared.OtObject, "ID_HERE")
+		c.enc.channel.Send(address, rm.JSON())
 	default:
 		log.Println("Received:", message)
 		c.enc.channel.Send(address, "Received non JSON message.")
