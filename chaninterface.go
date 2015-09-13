@@ -81,6 +81,10 @@ func (c *chaninterface) OnMessage(address, message string) {
 		log.Println("Sending example lock message.")
 		lm := shared.CreateLockMessage(shared.LoRequest)
 		c.enc.channel.Send(address, lm.JSON())
+	case "unlock":
+		log.Println("Sending example unlock message.")
+		lm := shared.CreateLockMessage(shared.LoRelease)
+		c.enc.channel.Send(address, lm.JSON())
 	case "request":
 		log.Println("Sending example request message.")
 		rm := shared.CreateRequestMessage(shared.OtObject, "ID_HERE")

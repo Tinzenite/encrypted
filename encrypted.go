@@ -16,12 +16,15 @@ import (
 Encrypted is the object which is used to control the encrypted Tinzenite peer.
 */
 type Encrypted struct {
-	RootPath   string
-	Peer       *shared.Peer
-	cInterface *chaninterface
-	channel    *channel.Channel
-	wg         sync.WaitGroup
-	stop       chan bool
+	RootPath      string
+	Peer          *shared.Peer
+	isLocked      bool       // is Encrypted currently locked?
+	lockedSince   *time.Time // time since Encrypted is locked.
+	lockedAddress string     // the address locked to
+	cInterface    *chaninterface
+	channel       *channel.Channel
+	wg            sync.WaitGroup
+	stop          chan bool
 }
 
 /*
@@ -60,12 +63,85 @@ func (enc *Encrypted) Store() error {
 }
 
 /*
+IsLocked returns whether this Encrypted is currently locked to a peer. NOTE:
+does NOT update the time. That can only be done internally upon receiving valid
+messages.
+*/
+func (enc *Encrypted) IsLocked() bool {
+	// if a time is set and enc is locked, check timeout
+	if enc.lockedSince != nil && enc.isLocked && time.Since(*enc.lockedSince) < lockTimeout {
+		// if time beneath limit still locked
+		return true
+	}
+	// otherwise: reset and return false
+	enc.ClearLock()
+	return false
+}
+
+/*
+ClearLock can be used to clear an existing lock. NOTE: this method is public to
+allow forcing a lock clear.
+*/
+func (enc *Encrypted) ClearLock() {
+	log.Println("DEBUG: UNLOCK")
+	enc.isLocked = false
+	enc.lockedAddress = ""
+	enc.lockedSince = nil
+}
+
+/*
 Close cleanly closes everything.
 */
 func (enc *Encrypted) Close() {
 	enc.stop <- true
 	enc.wg.Wait()
 	enc.channel.Close()
+}
+
+/*
+setLock can set the lock. The return value signifies whether the lock was
+successful. If not, it most likely means that Encrypted is already locked.
+*/
+func (enc *Encrypted) setLock(address string) bool {
+	// if still validly locked and address mismatches we can't lock
+	if enc.IsLocked() && enc.lockedAddress != address {
+		return false
+	}
+	log.Println("DEBUG: LOCK")
+	timeStamp := time.Now()
+	// otherwise set lock
+	enc.isLocked = true
+	enc.lockedAddress = address
+	enc.lockedSince = &timeStamp
+	return true
+}
+
+/*
+isLockedAddress returns true if the given address is the currently locking one.
+*/
+func (enc *Encrypted) isLockedAddress(address string) bool {
+	if enc.IsLocked() && enc.lockedAddress == address {
+		return true
+	}
+	return false
+}
+
+/*
+checkLock returns whether the lock is valid. If yes this method will
+update the time stamp. NOTE: the timeout is only enforced if another peer tries
+to lock Encrypted in the meantime.
+*/
+func (enc *Encrypted) checkLock(address string) bool {
+	// if the address matches update time stamp and return true
+	if enc.lockedAddress == address {
+		log.Println("DEBUG: UPDATING LOCK")
+		//note: this allows locks to hold for longer than the timeout, as long as
+		//      no other peer requested a lock since.
+		newStamp := time.Now()
+		enc.lockedSince = &(newStamp)
+		return true
+	}
+	return false
 }
 
 /*
