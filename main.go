@@ -56,18 +56,46 @@ func Create(path, peerName string) (*Encrypted, error) {
 	}
 	encrypted.Peer = peer
 	// run background stuff
-	encrypted.wg.Add(1)
-	encrypted.stop = make(chan bool, 1)
-	go encrypted.run()
+	initialize(encrypted)
+	// store initial copy
+	err = encrypted.Store()
+	if err != nil {
+		failed = true
+		return nil, err
+	}
 	// return instance
 	return encrypted, nil
 }
 
 /*
 Load returns the Encrypted structure for an existing instance.
-
-TODO write
 */
 func Load(path string) (*Encrypted, error) {
-	return nil, shared.ErrUnsupported
+	// TODO missing check whether this is a valid path...
+	encrypted := &Encrypted{
+		RootPath: path}
+	// prepare interface
+	encrypted.cInterface = createChanInterface(encrypted)
+	// load data
+	selfPeer, err := shared.LoadToxDumpFrom(path + "/" + shared.ORGDIR)
+	if err != nil {
+		return nil, err
+	}
+	// set self peer
+	encrypted.Peer = selfPeer.SelfPeer
+	// build channel
+	encrypted.channel, err = channel.Create(encrypted.Peer.Name, selfPeer.ToxData, encrypted.cInterface)
+	if err != nil {
+		return nil, err
+	}
+	// run background
+	initialize(encrypted)
+	// return instance
+	return encrypted, nil
+}
+
+func initialize(enc *Encrypted) {
+	enc.wg.Add(1)
+	enc.stop = make(chan bool, 1)
+	go enc.run()
 }

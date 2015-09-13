@@ -39,6 +39,27 @@ func (enc *Encrypted) Name() string {
 }
 
 /*
+Store writes the current state of the structure to disk so that it can be loaded
+again later.
+*/
+func (enc *Encrypted) Store() error {
+	// make org directory
+	err := shared.MakeDirectories(enc.RootPath, shared.ORGDIR, shared.ORGDIR+"/"+shared.PEERSDIR)
+	if err != nil {
+		return err
+	}
+	// store self peer
+	toxData, err := enc.channel.ToxData()
+	if err != nil {
+		return err
+	}
+	selfPeer := &shared.ToxPeerDump{
+		SelfPeer: enc.Peer,
+		ToxData:  toxData}
+	return selfPeer.StoreTo(enc.RootPath + "/" + shared.ORGDIR)
+}
+
+/*
 Close cleanly closes everything.
 */
 func (enc *Encrypted) Close() {

