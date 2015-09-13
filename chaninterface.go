@@ -24,11 +24,13 @@ OnFriendRequest is called when a friend request is received. Due to the nature
 of the encrypted peer, it will NEVER accept friend requests.
 */
 func (c *chaninterface) OnFriendRequest(address, message string) {
+	// for now only accept connection from myself for testing
 	if address[:8] == "ed284a9f" {
 		log.Println("Accepting connection from root.")
 		c.enc.channel.AcceptConnection(address)
 		return
 	}
+	// TODO usually encrypted should NEVER accept a friend request
 	log.Println("Connection request from", address[:8]+", ignoring!")
 }
 
@@ -39,11 +41,32 @@ func (c *chaninterface) OnMessage(address, message string) {
 	if err == nil {
 		switch msgType := v.Type; msgType {
 		case shared.MsgLock:
-			log.Println("TODO: received lock message!")
+			msg := &shared.LockMessage{}
+			err := json.Unmarshal([]byte(message), msg)
+			if err != nil {
+				log.Println("OnMessage: failed to parse JSON!", err)
+				return
+			}
+			// TODO on success hand off to logic NOTE: put in own file?
+			log.Println("TODO: received lock message!", msg.String())
 		case shared.MsgRequest:
-			log.Println("TODO: received request message!")
+			msg := &shared.RequestMessage{}
+			err := json.Unmarshal([]byte(message), msg)
+			if err != nil {
+				log.Println("OnMessage: failed to parse JSON!", err)
+				return
+			}
+			// TODO on success hand off to logic NOTE: put in own file?
+			log.Println("TODO: received request message!", msg.String())
 		case shared.MsgPush:
-			log.Println("TODO received push message!")
+			msg := &shared.PushMessage{}
+			err := json.Unmarshal([]byte(message), msg)
+			if err != nil {
+				log.Println("OnMessage: failed to parse JSON!", err)
+				return
+			}
+			// TODO on success hand off to logic NOTE: put in own file?
+			log.Println("TODO received push message!", msg.String())
 		default:
 			log.Println("WARNING: Unknown object received:", msgType.String())
 		}
@@ -67,17 +90,26 @@ func (c *chaninterface) OnMessage(address, message string) {
 	}
 }
 
+/*
+OnAllowFile is called when a file is to be received.
+*/
 func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 	// TODO check against allowed files and allow if ok
 	log.Println("Disallowing all file transfers for now.")
 	return false, ""
 }
 
+/*
+OnFileReceived is called when a file has been successfully received.
+*/
 func (c *chaninterface) OnFileReceived(address, path, name string) {
 	// TODO move from temp to high level storage
 	log.Println("OnFileReceived")
 }
 
+/*
+OnFileCanceled is called when a file has failed to be successfully received.
+*/
 func (c *chaninterface) OnFileCanceled(address, path string) {
 	// TODO mabye notify other side?
 	log.Println("OnFileCanceled")

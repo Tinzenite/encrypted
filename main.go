@@ -55,7 +55,7 @@ func Create(path, peerName string) (*Encrypted, error) {
 		return nil, err
 	}
 	encrypted.Peer = peer
-	// run background stuff
+	// run background
 	initialize(encrypted)
 	// store initial copy
 	err = encrypted.Store()
@@ -94,6 +94,9 @@ func Load(path string) (*Encrypted, error) {
 	return encrypted, nil
 }
 
+/*
+initialize is used to start the background process.
+*/
 func initialize(enc *Encrypted) {
 	enc.wg.Add(1)
 	enc.stop = make(chan bool, 1)
