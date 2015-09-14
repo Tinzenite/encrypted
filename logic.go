@@ -81,5 +81,7 @@ func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage
 		log.Println("DEBUG: not locked to given address!")
 		return
 	}
+	// TODO implement that file transfer is allowed. Note: write files to temp
+	// until transfer successfully completes, THEN overwrite existing (if any)
 	log.Println("TODO received push message!", pm.String())
 }

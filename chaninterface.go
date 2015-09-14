@@ -100,6 +100,7 @@ OnAllowFile is called when a file is to be received.
 */
 func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 	// TODO check against allowed files and allow if ok
+	// TODO write to temp directory to avoid file corruption if something goes wrong
 	log.Println("Disallowing all file transfers for now.")
 	return false, ""
 }
@@ -116,7 +117,7 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 OnFileCanceled is called when a file has failed to be successfully received.
 */
 func (c *chaninterface) OnFileCanceled(address, path string) {
-	// TODO mabye notify other side?
+	// TODO mabye notify other side? Remove from temp.
 	log.Println("OnFileCanceled")
 }
 
