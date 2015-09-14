@@ -42,7 +42,34 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 		log.Println("DEBUG: not locked to given address!")
 		return
 	}
-	log.Println("TODO: received request message!", rm.String())
+	// path of file to send (will be set accordingly depending on ObjType)
+	var filePath string
+	// check what file to get and set filePath accordingly
+	switch rm.ObjType {
+	case shared.OtObject:
+		filePath = c.enc.RootPath + "/" + rm.Identification
+	case shared.OtModel:
+		filePath = c.enc.RootPath + "/" + shared.MODELJSON
+	default:
+		// TODO maybe allow retrieval of this peer too?
+		log.Println("Invalid ObjType requested!", rm.ObjType.String())
+		return
+	}
+	// check that file exists
+	if exists, _ := shared.FileExists(filePath); !exists {
+		log.Println("DEBUG: file doesn't exist!", filePath)
+		return
+	}
+	// send file
+	err := c.enc.channel.SendFile(address, filePath, rm.Identification, func(success bool) {
+		if !success {
+			log.Println("Failed to send file on request!", filePath)
+		}
+	})
+	// if error log
+	if err != nil {
+		log.Println("SendFile returned error:", err)
+	}
 }
 
 /*
