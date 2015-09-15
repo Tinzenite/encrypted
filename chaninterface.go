@@ -96,13 +96,23 @@ func (c *chaninterface) OnMessage(address, message string) {
 }
 
 /*
-OnAllowFile is called when a file is to be received.
+OnAllowFile is called when a file is to be received. Name should be the
+file identification!
 */
 func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
-	// TODO check against allowed files and allow if ok
-	// TODO write to temp directory to avoid file corruption if something goes wrong
-	log.Println("Disallowing all file transfers for now.")
-	return false, ""
+	if !c.enc.checkLock(address) {
+		log.Println("OnAllowFile: not locked to given address, refusing!")
+		return false, ""
+	}
+	//check against allowed files and allow if ok
+	key := c.buildKey(address, name)
+	exists, _ := c.enc.allowedTransfers[key]
+	if !exists {
+		log.Println("DEBUG: refusing file transfer due to no allowance!")
+		return false, ""
+	}
+	//write to temp directory to avoid file corruption if something goes wrong
+	return true, c.enc.RootPath + "/" + shared.TEMPDIR + "/" + key
 }
 
 /*
@@ -110,7 +120,7 @@ OnFileReceived is called when a file has been successfully received.
 */
 func (c *chaninterface) OnFileReceived(address, path, name string) {
 	// TODO move from temp to high level storage
-	log.Println("OnFileReceived")
+	log.Println("OnFileReceived:", name, "From:", address[:8])
 }
 
 /*

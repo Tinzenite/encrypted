@@ -80,7 +80,26 @@ func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage
 		log.Println("DEBUG: not locked to given address!")
 		return
 	}
-	// TODO implement that file transfer is allowed. Note: write files to temp
-	// until transfer successfully completes, THEN overwrite existing (if any)
-	log.Println("TODO received push message!", pm.String())
+	// note that file transfer is allowed
+	var key string
+	switch pm.ObjType {
+	case shared.OtObject:
+		key = c.buildKey(address, pm.Identification)
+	case shared.OtModel:
+		// TODO how do we notice and allow model? FIXME
+		log.Println("DEBUG: WARNING model not yet cleanly implemented, check key on push!")
+		key = c.buildKey(address, shared.MODELJSON)
+	default:
+		log.Println("Invalid ObjType pushed!", pm.ObjType.String())
+		return
+	}
+	// if we reach this, allow
+	c.enc.allowedTransfers[key] = true
+}
+
+/*
+buildKey is a helper function that builds the key used to identify transfers.
+*/
+func (c *chaninterface) buildKey(address, identification string) string {
+	return address + ":" + identification
 }
