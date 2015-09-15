@@ -19,8 +19,8 @@ func Create(path, peerName string) (*Encrypted, error) {
 	}
 	// flag whether we need to clen up after us
 	var failed bool
-	// make org directory
-	err := shared.MakeDirectories(path, shared.ORGDIR, shared.ORGDIR+"/"+shared.PEERSDIR)
+	// make directories
+	err := createEncryptedDirectories(path)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,8 @@ func Create(path, peerName string) (*Encrypted, error) {
 Load returns the Encrypted structure for an existing instance.
 */
 func Load(path string) (*Encrypted, error) {
-	// TODO missing check whether this is a valid path...
+	// TODO missing check whether this is a valid path... FIXME
+	// make missing dirs if path ok? createEncryptedDirectories(path)
 	encrypted := &Encrypted{
 		RootPath:         path,
 		allowedTransfers: make(map[string]bool)}
@@ -103,4 +104,14 @@ func initialize(enc *Encrypted) {
 	enc.wg.Add(1)
 	enc.stop = make(chan bool, 1)
 	go enc.run()
+}
+
+/*
+createEncryptedDirectories builds the directory structure.
+*/
+func createEncryptedDirectories(root string) error {
+	org := shared.ORGDIR
+	peers := shared.ORGDIR + "/" + shared.PEERSDIR
+	temp := shared.TEMPDIR
+	return shared.MakeDirectories(root, org, peers, temp)
 }

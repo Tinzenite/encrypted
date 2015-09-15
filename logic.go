@@ -11,7 +11,6 @@ handleLockMessage handles the logic upon receiving a LockMessage. Notably this
 includes allowing or disallowing a lock for a specific time frame.
 */
 func (c *chaninterface) handleLockMessage(address string, lm *shared.LockMessage) {
-	log.Println("TODO: received lock message!", lm.String())
 	switch lm.Action {
 	case shared.LoRequest:
 		if c.enc.setLock(address) {
@@ -51,7 +50,7 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 	case shared.OtModel:
 		filePath = c.enc.RootPath + "/" + shared.MODELJSON
 	default:
-		// TODO maybe allow retrieval of this peer too?
+		// TODO maybe allow retrieval of this peer too? Need to get peer from PEERSDIR
 		log.Println("Invalid ObjType requested!", rm.ObjType.String())
 		return
 	}
