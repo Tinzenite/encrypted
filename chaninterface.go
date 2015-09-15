@@ -106,7 +106,7 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 	}
 	//check against allowed files and allow if ok
 	key := c.buildKey(address, name)
-	exists, _ := c.enc.allowedTransfers[key]
+	_, exists := c.enc.allowedTransfers[key]
 	if !exists {
 		log.Println("DEBUG: refusing file transfer due to no allowance!")
 		return false, ""
