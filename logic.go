@@ -26,9 +26,9 @@ func (c *chaninterface) handleLockMessage(address string, lm *shared.LockMessage
 			// TODO notify of clear?
 			return
 		}
-		log.Println("WARNING: received release request from invalid peer!")
+		log.Println("handleLockMessage: WARNING: received release request from invalid peer!", address[:8])
 	default:
-		log.Println("Invalid action in LockMessage received!")
+		log.Println("handleLockMessage: Invalid action received!")
 	}
 }
 
@@ -38,7 +38,7 @@ will only be actually handled if Encrypted is currently locked.
 */
 func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestMessage) {
 	if !c.enc.checkLock(address) {
-		log.Println("DEBUG: not locked to given address!")
+		log.Println("handleRequestMessage: not locked to given address!", address[:8])
 		return
 	}
 	// path of file to send (will be set accordingly depending on ObjType)
@@ -51,23 +51,23 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 		filePath = c.enc.RootPath + "/" + shared.MODELJSON
 	default:
 		// TODO maybe allow retrieval of this peer too? Need to get peer from PEERSDIR
-		log.Println("Invalid ObjType requested!", rm.ObjType.String())
+		log.Println("handleRequestMessage: Invalid ObjType requested!", rm.ObjType.String())
 		return
 	}
 	// check that file exists
 	if exists, _ := shared.FileExists(filePath); !exists {
-		log.Println("DEBUG: file doesn't exist!", filePath)
+		log.Println("handleRequestMessage: file doesn't exist!", filePath)
 		return
 	}
 	// send file
 	err := c.enc.channel.SendFile(address, filePath, rm.Identification, func(success bool) {
 		if !success {
-			log.Println("Failed to send file on request!", filePath)
+			log.Println("handleRequestMessage: Failed to send file on request!", filePath)
 		}
 	})
 	// if error log
 	if err != nil {
-		log.Println("SendFile returned error:", err)
+		log.Println("handleRequestMessage: SendFile returned error:", err)
 	}
 }
 
@@ -77,7 +77,7 @@ only be actually handled if Encrypted is currently locked.
 */
 func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage) {
 	if !c.enc.checkLock(address) {
-		log.Println("DEBUG: not locked to given address!")
+		log.Println("handlePushMessage: not locked to given address!", address[:8])
 		return
 	}
 	// note that file transfer is allowed
@@ -90,7 +90,7 @@ func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage
 		log.Println("DEBUG: WARNING model not yet cleanly implemented, check key on push!")
 		key = c.buildKey(address, shared.MODELJSON)
 	default:
-		log.Println("Invalid ObjType pushed!", pm.ObjType.String())
+		log.Println("handlePushMessage: Invalid ObjType pushed!", pm.ObjType.String())
 		return
 	}
 	// if we reach this, allow
