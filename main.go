@@ -9,13 +9,17 @@ import (
 Create returns a new Encrypted instance, ready to be connected to an existing
 network.
 */
-func Create(path, peerName string) (*Encrypted, error) {
+func Create(path, peerName string, storage Storage) (*Encrypted, error) {
 	// must start on empty directory
 	if empty, err := shared.IsDirectoryEmpty(path); !empty {
 		if err != nil {
 			return nil, err
 		}
 		return nil, ErrNonEmpty
+	}
+	// ensure valid parameters
+	if path == "" || peerName == "" || storage == nil {
+		return nil, shared.ErrIllegalParameters
 	}
 	// flag whether we need to clen up after us
 	var failed bool
@@ -33,6 +37,7 @@ func Create(path, peerName string) (*Encrypted, error) {
 	// build
 	encrypted := &Encrypted{
 		RootPath:         path, // rootPath for storing root
+		storage:          storage,
 		allowedTransfers: make(map[string]bool)}
 	// prepare chaninterface
 	encrypted.cInterface = createChanInterface(encrypted)
@@ -71,11 +76,17 @@ func Create(path, peerName string) (*Encrypted, error) {
 /*
 Load returns the Encrypted structure for an existing instance.
 */
-func Load(path string) (*Encrypted, error) {
+func Load(path string, storage Storage) (*Encrypted, error) {
 	// TODO missing check whether this is a valid path... FIXME
 	// make missing dirs if path ok? createEncryptedDirectories(path)
+	// ensure valid parameters
+	if path == "" || storage == nil {
+		return nil, shared.ErrIllegalParameters
+	}
+	// build structure
 	encrypted := &Encrypted{
 		RootPath:         path,
+		storage:          storage,
 		allowedTransfers: make(map[string]bool)}
 	// prepare interface
 	encrypted.cInterface = createChanInterface(encrypted)

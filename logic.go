@@ -1,7 +1,9 @@
 package encrypted
 
 import (
+	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/tinzenite/shared"
 )
@@ -41,28 +43,45 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 		log.Println("handleRequestMessage: not locked to given address!", address[:8])
 		return
 	}
-	// path of file to send (will be set accordingly depending on ObjType)
-	var filePath string
-	// check what file to get and set filePath accordingly
+	// key to retrieve from storage
+	var identification string
+	// check file type and set identification accordingly
 	switch rm.ObjType {
 	case shared.OtObject:
-		filePath = c.enc.RootPath + "/" + rm.Identification
+		identification = rm.Identification
 	case shared.OtModel:
-		filePath = c.enc.RootPath + "/" + shared.MODELJSON
+		identification = shared.MODELJSON
 	default:
 		// TODO maybe allow retrieval of this peer too? Need to get peer from PEERSDIR
 		log.Println("handleRequestMessage: Invalid ObjType requested!", rm.ObjType.String())
 		return
 	}
-	// check that file exists
-	if exists, _ := shared.FileExists(filePath); !exists {
-		log.Println("handleRequestMessage: file doesn't exist!", filePath)
+	// fetch data
+	data, err := c.enc.storage.Retrieve(identification)
+	if err != nil {
+		log.Println("handleRequestMessage: retrieval from storage failed:", err)
+		return
+	}
+	// path for temp file
+	filePath := c.enc.RootPath + "/" + SEDIR + "/" + c.buildKey(address, identification)
+	// write data to temp sending file
+	err = ioutil.WriteFile(filePath, data, shared.FILEPERMISSIONMODE)
+	if err != nil {
+		log.Println("handleRequestMessage: failed to write data to SEDIR:", err)
 		return
 	}
 	// send file
-	err := c.enc.channel.SendFile(address, filePath, rm.Identification, func(success bool) {
+	err = c.enc.channel.SendFile(address, filePath, rm.Identification, func(success bool) {
+		// if NOT success, log and keep file for debugging
 		if !success {
 			log.Println("handleRequestMessage: Failed to send file on request!", filePath)
+			return
+		}
+		// remove file
+		err := os.Remove(filePath)
+		if err != nil {
+			log.Println("handleRequestMessage: failed to remove temp file:", err)
+			return
 		}
 	})
 	// if error log
@@ -80,7 +99,7 @@ func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage
 		log.Println("handlePushMessage: not locked to given address!", address[:8])
 		return
 	}
-	// note that file transfer is allowed
+	// note that file transfer is allowed for when file is received
 	var key string
 	switch pm.ObjType {
 	case shared.OtObject:

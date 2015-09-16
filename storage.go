@@ -1,27 +1,12 @@
 package encrypted
 
 /*
-TODO abstract storage away so that we can write to hadoop AND disk.
-NOTE: maybe this should be something the server handles? Or is encrypted equal
-to the server now? FIXME: this should be an INTERFACE!!!
+Storage is the interface a struct must satisfy to allow encrypted to use it as a
+storage backend.
 */
-type storage struct {
-}
-
-func createStorage() *storage {
-	return &storage{}
-}
-
-/*
-TODO check how data should be passed to here
-*/
-func (s *storage) WriteData() {
-	// TODO write to whatever has been selected for data
-}
-
-/*
-TODO check how data should be passed to here
-*/
-func (s *storage) WriteOrg() {
-	// TODO write non data stuff (ORGDIR, TEMPDIR, etc)
+type Storage interface {
+	/*Store writes the given data to the key.*/
+	Store(key string, data []byte) error
+	/*Retrieve fetches the data for a key.*/
+	Retrieve(key string) ([]byte, error)
 }

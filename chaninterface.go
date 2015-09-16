@@ -2,6 +2,7 @@ package encrypted
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -114,8 +115,8 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 		log.Println("OnAllowFile: refusing file transfer due to no allowance!")
 		return false, ""
 	}
-	//write to temp directory to avoid file corruption if something goes wrong
-	return true, c.enc.RootPath + "/" + shared.TEMPDIR + "/" + key
+	//write to REDIR
+	return true, c.enc.RootPath + "/" + REDIR + "/" + key
 }
 
 /*
@@ -125,15 +126,23 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 	// note: no lock check so that locks don't have to stay on for long file transfers
 	// need to read id so that we can write it to the correct location
 	identification := strings.Split(name, ":")[1]
-	// move file (may overwrite "old" versions)
-	err := os.Rename(path, c.enc.RootPath+"/"+identification)
+	// read data
+	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Println("OnFileReceived: failed to move file out of temp:", err)
-		// remove temp file if exists
-		err := os.Remove(path)
-		if err != nil {
-			log.Println("OnFileReceived: failed to remove temp file:", err)
-		}
+		log.Println("OnFileReceived: failed to read file:", err)
+		return
+	}
+	// write to storage
+	err = c.enc.storage.Store(identification, data)
+	if err != nil {
+		log.Println("OnFileReceived: storing to storage failed:", err)
+		return
+	}
+	// remove temp file
+	err = os.Remove(path)
+	if err != nil {
+		log.Println("OnFileReceived: failed to remove temp file:", err)
+		return
 	}
 }
 
@@ -147,6 +156,7 @@ func (c *chaninterface) OnFileCanceled(address, path string) {
 	err := os.Remove(path)
 	if err != nil {
 		log.Println("OnFileCanceled: failed to remove temp file:", err)
+		return
 	}
 }
 
