@@ -3,6 +3,8 @@ package encrypted
 import (
 	"encoding/json"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/tinzenite/shared"
 )
@@ -119,16 +121,28 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 OnFileReceived is called when a file has been successfully received.
 */
 func (c *chaninterface) OnFileReceived(address, path, name string) {
-	// TODO move from temp to high level storage
-	log.Println("OnFileReceived:", name, "From:", address[:8])
+	// note: no lock check so that locks don't have to stay on for long file transfers
+	// need to read id so that we can write it to the correct location
+	identification := strings.Split(name, ":")[1]
+	// move file (may overwrite "old" versions)
+	err := os.Rename(path, c.enc.RootPath+"/"+identification)
+	if err != nil {
+		log.Println("OnFileReceived: failed to move file out of temp:", err)
+		// TODO remove temp?
+	}
 }
 
 /*
 OnFileCanceled is called when a file has failed to be successfully received.
 */
 func (c *chaninterface) OnFileCanceled(address, path string) {
-	// TODO mabye notify other side? Remove from temp.
-	log.Println("OnFileCanceled")
+	// note: no lock check so that locks don't have to stay on for long file transfers
+	log.Println("OnFileCanceled:", path)
+	// remove temp file if exists
+	err := os.Remove(path)
+	if err != nil {
+		log.Println("OnFileCanceled: failed to remove file:", err)
+	}
 }
 
 /*

@@ -2,6 +2,8 @@ package encrypted
 
 /*
 TODO abstract storage away so that we can write to hadoop AND disk.
+NOTE: maybe this should be something the server handles? Or is encrypted equal
+to the server now?
 */
 type storage struct {
 }
@@ -21,5 +23,5 @@ func (s *storage) WriteData() {
 TODO check how data should be passed to here
 */
 func (s *storage) WriteOrg() {
-	// TODO write non data stuff (ORDFIR, TEMPDIR, etc)
+	// TODO write non data stuff (ORGDIR, TEMPDIR, etc)
 }
