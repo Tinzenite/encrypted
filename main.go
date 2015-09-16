@@ -123,6 +123,5 @@ createEncryptedDirectories builds the directory structure.
 func createEncryptedDirectories(root string) error {
 	org := shared.ORGDIR
 	peers := shared.ORGDIR + "/" + shared.PEERSDIR
-	temp := shared.TEMPDIR
-	return shared.MakeDirectories(root, org, peers, temp)
+	return shared.MakeDirectories(root, org, peers, REDIR, SEDIR)
 }
