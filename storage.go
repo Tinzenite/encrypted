@@ -3,7 +3,7 @@ package encrypted
 /*
 TODO abstract storage away so that we can write to hadoop AND disk.
 NOTE: maybe this should be something the server handles? Or is encrypted equal
-to the server now?
+to the server now? FIXME: this should be an INTERFACE!!!
 */
 type storage struct {
 }

@@ -80,14 +80,30 @@ func (enc *Encrypted) IsLocked() bool {
 }
 
 /*
-ClearLock can be used to clear an existing lock. NOTE: this method is public to
-allow forcing a lock clear.
+ClearLock can be used to clear an existing lock. Internally called when a lock is
+released. NOTE: this method is public to allow forcing a lock clear.
 */
 func (enc *Encrypted) ClearLock() {
-	log.Println("DEBUG: UNLOCK")
+	// note address we are clearing
+	address := enc.lockedAddress
+	// clean lock
 	enc.isLocked = false
 	enc.lockedAddress = ""
 	enc.lockedSince = nil
+	// if not valid address we didn't really clear a lock, so we're done
+	if address == "" {
+		return
+	}
+	//clean up any outstanding file transfers for cleared address (but not running ones!)
+	var toRemove []string
+	for key := range enc.allowedTransfers {
+		if strings.HasPrefix(key, address) {
+			toRemove = append(toRemove, key)
+		}
+	}
+	for _, key := range toRemove {
+		delete(enc.allowedTransfers, key)
+	}
 }
 
 /*
@@ -135,7 +151,6 @@ to lock Encrypted in the meantime.
 func (enc *Encrypted) checkLock(address string) bool {
 	// if the address matches update time stamp and return true
 	if enc.lockedAddress == address {
-		log.Println("DEBUG: UPDATING LOCK")
 		//note: this allows locks to hold for longer than the timeout, as long as
 		//      no other peer requested a lock since.
 		newStamp := time.Now()
