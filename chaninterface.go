@@ -28,12 +28,13 @@ of the encrypted peer, it will NEVER accept friend requests.
 func (c *chaninterface) OnFriendRequest(address, message string) {
 	// for now only accept connection from myself for testing
 	if address[:8] == "ed284a9f" {
-		log.Println("Accepting connection from root.")
+		// TODO remove once done debuging / deving
+		log.Println("OnFriendRequest: Accepting connection from root.")
 		c.enc.channel.AcceptConnection(address)
 		return
 	}
 	// TODO usually encrypted should NEVER accept a friend request
-	log.Println("Connection request from", address[:8]+", ignoring!")
+	log.Println("OnFriendRequest: Connection request from", address[:8]+", ignoring!")
 }
 
 func (c *chaninterface) OnMessage(address, message string) {
@@ -67,7 +68,7 @@ func (c *chaninterface) OnMessage(address, message string) {
 			}
 			c.handlePushMessage(address, msg)
 		default:
-			log.Println("WARNING: Unknown object received:", msgType.String())
+			log.Println("OnMessage: WARNING: Unknown object received:", msgType.String())
 		}
 		// in any case return as we are done handling them
 		return
@@ -110,7 +111,7 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 	key := c.buildKey(address, name)
 	_, exists := c.enc.allowedTransfers[key]
 	if !exists {
-		log.Println("DEBUG: refusing file transfer due to no allowance!")
+		log.Println("OnAllowFile: refusing file transfer due to no allowance!")
 		return false, ""
 	}
 	//write to temp directory to avoid file corruption if something goes wrong
@@ -128,7 +129,11 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 	err := os.Rename(path, c.enc.RootPath+"/"+identification)
 	if err != nil {
 		log.Println("OnFileReceived: failed to move file out of temp:", err)
-		// TODO remove temp?
+		// remove temp file if exists
+		err := os.Remove(path)
+		if err != nil {
+			log.Println("OnFileReceived: failed to remove temp file:", err)
+		}
 	}
 }
 
@@ -141,7 +146,7 @@ func (c *chaninterface) OnFileCanceled(address, path string) {
 	// remove temp file if exists
 	err := os.Remove(path)
 	if err != nil {
-		log.Println("OnFileCanceled: failed to remove file:", err)
+		log.Println("OnFileCanceled: failed to remove temp file:", err)
 	}
 }
 
@@ -150,5 +155,5 @@ OnConnected is called when another peer comes online.
 */
 func (c *chaninterface) OnConnected(address string) {
 	// only notify log, nothing else to do for us here
-	log.Println("Connected:", address[:8])
+	log.Println("OnConnected:", address[:8])
 }
