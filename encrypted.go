@@ -49,7 +49,7 @@ again later.
 */
 func (enc *Encrypted) Store() error {
 	// make org directory
-	err := shared.MakeDirectories(enc.RootPath, shared.ORGDIR, shared.ORGDIR+"/"+shared.PEERSDIR)
+	err := createEncryptedDirectories(enc.RootPath)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (enc *Encrypted) Store() error {
 	selfPeer := &shared.ToxPeerDump{
 		SelfPeer: enc.Peer,
 		ToxData:  toxData}
-	return selfPeer.StoreTo(enc.RootPath + "/" + shared.ORGDIR)
+	return selfPeer.StoreTo(enc.RootPath + "/" + shared.LOCALDIR)
 }
 
 /*
@@ -184,6 +184,7 @@ func (enc *Encrypted) run() {
 
 /*
 updatePeers should be called regularily to allow the connection of new peers.
+NOTE: for now will only connect to trusted peers.
 */
 func (enc *Encrypted) updatePeers() error {
 	// load peers from ORGDIR
@@ -209,6 +210,16 @@ func (enc *Encrypted) updatePeers() error {
 	}
 	// now update channel accordingly
 	for _, peer := range peers {
+		// ignore self peer
+		if peer.Address == enc.Peer.Address {
+			continue
+		}
+		// ignore other encrypted peers (there are no operations we can do with them yet)
+		if !peer.Trusted {
+			// TODO: why CAN'T encrypted peers sync each other? They can just update their encrypted states accordingly... FIXME
+			log.Println("DEBUG: ignoring other encrypted peer on peerUpdate!")
+			continue
+		}
 		// tox will return an error if the address has already been added, so we just ignore it
 		_ = enc.channel.AcceptConnection(peer.Address)
 	}

@@ -118,10 +118,9 @@ func initialize(enc *Encrypted) {
 }
 
 /*
-createEncryptedDirectories builds the directory structure.
+createEncryptedDirectories builds the directory structure. Used also for StoreTo.
 */
 func createEncryptedDirectories(root string) error {
-	org := shared.ORGDIR
 	peers := shared.ORGDIR + "/" + shared.PEERSDIR
-	return shared.MakeDirectories(root, org, peers, REDIR, SEDIR)
+	return shared.MakeDirectories(root, shared.LOCALDIR, shared.ORGDIR, peers, REDIR, SEDIR)
 }
