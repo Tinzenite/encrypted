@@ -24,7 +24,7 @@ func Create(path, peerName string, storage Storage) (*Encrypted, error) {
 	// flag whether we need to clen up after us
 	var failed bool
 	// make directories
-	err := createEncryptedDirectories(path)
+	err := shared.MakeEncryptedDir(path)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func Load(path string, storage Storage) (*Encrypted, error) {
 	// prepare interface
 	encrypted.cInterface = createChanInterface(encrypted)
 	// load data
-	selfPeer, err := shared.LoadToxDumpFrom(path + "/" + shared.ORGDIR)
+	selfPeer, err := shared.LoadToxDumpFrom(path + "/" + shared.LOCALDIR)
 	if err != nil {
 		return nil, err
 	}
@@ -115,12 +115,4 @@ func initialize(enc *Encrypted) {
 	enc.wg.Add(1)
 	enc.stop = make(chan bool, 1)
 	go enc.run()
-}
-
-/*
-createEncryptedDirectories builds the directory structure. Used also for StoreTo.
-*/
-func createEncryptedDirectories(root string) error {
-	peers := shared.ORGDIR + "/" + shared.PEERSDIR
-	return shared.MakeDirectories(root, shared.LOCALDIR, shared.ORGDIR, peers, REDIR, SEDIR)
 }

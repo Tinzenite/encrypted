@@ -49,7 +49,7 @@ again later.
 */
 func (enc *Encrypted) Store() error {
 	// make org directory
-	err := createEncryptedDirectories(enc.RootPath)
+	err := shared.MakeEncryptedDir(enc.RootPath)
 	if err != nil {
 		return err
 	}

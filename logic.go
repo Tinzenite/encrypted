@@ -59,7 +59,7 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 		return
 	}
 	// path for temp file
-	filePath := c.enc.RootPath + "/" + SEDIR + "/" + c.buildKey(address, identification)
+	filePath := c.enc.RootPath + "/" + shared.SENDINGDIR + "/" + c.buildKey(address, identification)
 	// write data to temp sending file
 	err = ioutil.WriteFile(filePath, data, shared.FILEPERMISSIONMODE)
 	if err != nil {

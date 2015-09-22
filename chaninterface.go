@@ -126,8 +126,8 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 		log.Println("OnAllowFile: refusing file transfer due to no allowance!")
 		return false, ""
 	}
-	//write to REDIR
-	return true, c.enc.RootPath + "/" + REDIR + "/" + key
+	//write to RECEIVINGDIR
+	return true, c.enc.RootPath + "/" + shared.RECEIVINGDIR + "/" + key
 }
 
 /*
