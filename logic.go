@@ -39,23 +39,19 @@ handleRequestMessage handles the logic upon receiving a RequestMessage. NOTE:
 will only be actually handled if Encrypted is currently locked.
 */
 func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestMessage) {
-	if !c.enc.checkLock(address) {
-		log.Println("handleRequestMessage: not locked to given address!", address[:8])
-		return
-	}
 	// key to retrieve from storage
 	var identification string
 	// check file type and set identification accordingly
 	switch rm.ObjType {
 	case shared.OtObject:
 		identification = rm.Identification
-	case shared.OtModel:
-		identification = shared.MODELJSON
+		// TODO special case for MODELJSON
 	default:
 		// TODO maybe allow retrieval of this peer too? Need to get peer from PEERSDIR
 		log.Println("handleRequestMessage: Invalid ObjType requested!", rm.ObjType.String())
 		return
 	}
+	// TODO differentiate ORGDIR and MODELJSON
 	// fetch data
 	data, err := c.enc.storage.Retrieve(identification)
 	if err != nil {
@@ -91,14 +87,9 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 }
 
 /*
-handlePushMessage handles the logic upon receiving a PushMessage. NOTE: will
-only be actually handled if Encrypted is currently locked.
+handlePushMessage handles the logic upon receiving a PushMessage.
 */
 func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage) {
-	if !c.enc.checkLock(address) {
-		log.Println("handlePushMessage: not locked to given address!", address[:8])
-		return
-	}
 	// note that file transfer is allowed for when file is received
 	var key string
 	switch pm.ObjType {

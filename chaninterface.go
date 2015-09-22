@@ -43,8 +43,8 @@ func (c *chaninterface) OnMessage(address, message string) {
 	v := &shared.Message{}
 	err := json.Unmarshal([]byte(message), v)
 	if err == nil {
-		switch msgType := v.Type; msgType {
-		case shared.MsgLock:
+		// special case for lock messages (can be received if not locked)
+		if v.Type == shared.MsgLock {
 			msg := &shared.LockMessage{}
 			err := json.Unmarshal([]byte(message), msg)
 			if err != nil {
@@ -52,6 +52,17 @@ func (c *chaninterface) OnMessage(address, message string) {
 				return
 			}
 			c.handleLockMessage(address, msg)
+			return
+		}
+		// for all others ensure that we are locked correctly
+		if !c.enc.checkLock(address) {
+			// if not warn and ignore message
+			log.Println("OnMessage: not locked to given address!", address[:8])
+			// TODO send notify that they are unlocked back?
+			return
+		}
+		// if correctly locked handle message according to type
+		switch msgType := v.Type; msgType {
 		case shared.MsgRequest:
 			msg := &shared.RequestMessage{}
 			err := json.Unmarshal([]byte(message), msg)
@@ -132,6 +143,7 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 		log.Println("OnFileReceived: failed to read file:", err)
 		return
 	}
+	// TODO differentiate complete ORGDIR and MODELJSON
 	// write to storage
 	err = c.enc.storage.Store(identification, data)
 	if err != nil {
