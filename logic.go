@@ -39,23 +39,27 @@ handleRequestMessage handles the logic upon receiving a RequestMessage. NOTE:
 will only be actually handled if Encrypted is currently locked.
 */
 func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestMessage) {
-	// key to retrieve from storage
-	var identification string
-	// check file type and set identification accordingly
+	var data []byte           // data to send
+	var identification string // identification for writing temp file
+	var err error
+	// check file type and fetch data accordingly
 	switch rm.ObjType {
 	case shared.OtObject:
+		// TODO differentiate ORGDIR from path? how? we don't have it... :( FIXME: add more special ID____ things
+		// fetch data for normal objects from storage
+		data, err = c.enc.storage.Retrieve(rm.Identification)
 		identification = rm.Identification
-		// TODO special case for MODELJSON
+	case shared.OtModel:
+		// model is read from specially named file
+		data, err = ioutil.ReadFile(c.enc.RootPath + "/" + shared.IDMODEL)
+		identification = shared.IDMODEL
 	default:
-		// TODO maybe allow retrieval of this peer too? Need to get peer from PEERSDIR
 		log.Println("handleRequestMessage: Invalid ObjType requested!", rm.ObjType.String())
 		return
 	}
-	// TODO differentiate ORGDIR and MODELJSON
-	// fetch data
-	data, err := c.enc.storage.Retrieve(identification)
+	// if error return
 	if err != nil {
-		log.Println("handleRequestMessage: retrieval from storage failed:", err)
+		log.Println("handleRequestMessage: retrieval of", rm.ObjType, "failed:", err)
 		return
 	}
 	// path for temp file
@@ -96,9 +100,7 @@ func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage
 	case shared.OtObject:
 		key = c.buildKey(address, pm.Identification)
 	case shared.OtModel:
-		// TODO how do we notice and allow model? FIXME
-		log.Println("DEBUG: WARNING model not yet cleanly implemented, check key on push!")
-		key = c.buildKey(address, shared.MODELJSON)
+		key = c.buildKey(address, shared.IDMODEL)
 	default:
 		log.Println("handlePushMessage: Invalid ObjType pushed!", pm.ObjType.String())
 		return

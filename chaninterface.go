@@ -143,9 +143,14 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 		log.Println("OnFileReceived: failed to read file:", err)
 		return
 	}
-	// TODO differentiate complete ORGDIR and MODELJSON
-	// write to storage
-	err = c.enc.storage.Store(identification, data)
+	// TODO differentiate complete ORGDIR FIXME the IF should be a switch
+	// model is not written to storage but to disk directly
+	if identification == shared.IDMODEL {
+		err = ioutil.WriteFile(c.enc.RootPath+"/"+shared.IDMODEL, data, shared.FILEPERMISSIONMODE)
+	} else {
+		// write to storage
+		err = c.enc.storage.Store(identification, data)
+	}
 	if err != nil {
 		log.Println("OnFileReceived: storing to storage failed:", err)
 		return
