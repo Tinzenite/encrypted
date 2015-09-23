@@ -61,6 +61,9 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 	// if error return
 	if err != nil {
 		log.Println("handleRequestMessage: retrieval of", rm.ObjType, "failed:", err)
+		// notify sender that it don't exist
+		nm := shared.CreateNotifyMessage(shared.NoMissing, identification)
+		c.enc.channel.Send(address, nm.JSON())
 		return
 	}
 	// path for temp file
