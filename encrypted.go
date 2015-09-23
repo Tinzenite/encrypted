@@ -95,6 +95,7 @@ func (enc *Encrypted) ClearLock() {
 	if address == "" {
 		return
 	}
+	log.Println("Encrypted: released from", address[:8])
 	//clean up any outstanding file transfers for cleared address (but not running ones!)
 	var toRemove []string
 	for key := range enc.allowedTransfers {
@@ -125,6 +126,7 @@ func (enc *Encrypted) setLock(address string) bool {
 	if enc.IsLocked() && enc.lockedAddress != address {
 		return false
 	}
+	log.Println("Encrypted: locked to", address[:8])
 	timeStamp := time.Now()
 	// otherwise set lock
 	enc.isLocked = true
