@@ -29,7 +29,7 @@ of the encrypted peer, it will NEVER accept friend requests.
 func (c *chaninterface) OnFriendRequest(address, message string) {
 	// for now only accept connection from myself for testing
 	if address[:8] == "ed284a9f" {
-		// TODO remove once done debuging / deving
+		// TODO remove once done debugging / "dev"-ing
 		log.Println("OnFriendRequest: Accepting connection from root.")
 		c.enc.channel.AcceptConnection(address)
 		return

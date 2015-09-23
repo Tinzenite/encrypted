@@ -125,7 +125,6 @@ func (enc *Encrypted) setLock(address string) bool {
 	if enc.IsLocked() && enc.lockedAddress != address {
 		return false
 	}
-	log.Println("DEBUG: LOCK")
 	timeStamp := time.Now()
 	// otherwise set lock
 	enc.isLocked = true
