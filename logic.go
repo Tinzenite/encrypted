@@ -20,7 +20,6 @@ func (c *chaninterface) handleLockMessage(address string, lm *shared.LockMessage
 			accept := shared.CreateLockMessage(shared.LoAccept)
 			c.enc.channel.Send(address, accept.JSON())
 		}
-		log.Println("Encrypted: denying request from", address[:8])
 		// if not successful we don't do anything, peer will retry
 		return
 	case shared.LoRelease:
