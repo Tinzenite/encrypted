@@ -90,7 +90,7 @@ func (c *chaninterface) OnMessage(address, message string) {
 	switch message {
 	case "push":
 		log.Println("Sending example push message.")
-		pm := shared.CreatePushMessage("ID_HERE", shared.OtObject)
+		pm := shared.CreatePushMessage("ID_HERE", "NAME_HERE", shared.OtObject)
 		c.enc.channel.Send(address, pm.JSON())
 	case "lock":
 		log.Println("Sending example lock message.")
