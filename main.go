@@ -38,7 +38,7 @@ func Create(path, peerName string, storage Storage) (*Encrypted, error) {
 	encrypted := &Encrypted{
 		RootPath:         path, // rootPath for storing root
 		storage:          storage,
-		allowedTransfers: make(map[string]bool)}
+		allowedTransfers: make(map[string]*shared.PushMessage)}
 	// prepare chaninterface
 	encrypted.cInterface = createChanInterface(encrypted)
 	// build channel
@@ -87,7 +87,7 @@ func Load(path string, storage Storage) (*Encrypted, error) {
 	encrypted := &Encrypted{
 		RootPath:         path,
 		storage:          storage,
-		allowedTransfers: make(map[string]bool)}
+		allowedTransfers: make(map[string]*shared.PushMessage)}
 	// prepare interface
 	encrypted.cInterface = createChanInterface(encrypted)
 	// load data

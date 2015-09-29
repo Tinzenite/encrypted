@@ -18,11 +18,11 @@ Encrypted is the object which is used to control the encrypted Tinzenite peer.
 type Encrypted struct {
 	RootPath         string
 	Peer             *shared.Peer
-	storage          Storage         // storage to use for writing and reading data
-	isLocked         bool            // is Encrypted currently locked?
-	lockedSince      *time.Time      // time since Encrypted is locked.
-	lockedAddress    string          // the address locked to
-	allowedTransfers map[string]bool // storage for allowed uploads to encrypted
+	storage          Storage                        // storage to use for writing and reading data
+	isLocked         bool                           // is Encrypted currently locked?
+	lockedSince      *time.Time                     // time since Encrypted is locked.
+	lockedAddress    string                         // the address locked to
+	allowedTransfers map[string]*shared.PushMessage // storage for allowed uploads to encrypted
 	cInterface       *chaninterface
 	channel          *channel.Channel
 	wg               sync.WaitGroup

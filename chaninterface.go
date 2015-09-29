@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/tinzenite/shared"
 )
@@ -134,31 +133,46 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 OnFileReceived is called when a file has been successfully received.
 */
 func (c *chaninterface) OnFileReceived(address, path, name string) {
-	// note: no lock check so that locks don't have to stay on for long file transfers
-	// need to read id so that we can write it to the correct location
-	identification := strings.Split(name, ":")[1]
+	// TODO fix this: NOTE: no lock check so that locks don't have to stay on for long file transfers
+	// no matter what, remove temp file
+	defer func() {
+		err := os.Remove(path)
+		if err != nil {
+			log.Println("OnFileReceived: failed to remove temp file:", err)
+		}
+	}()
+	// fetch push message for file
+	pm, exists := c.enc.allowedTransfers[name]
+	if !exists {
+		log.Println("OnFileReceived: no associated push message found!")
+		return
+	}
 	// read data
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Println("OnFileReceived: failed to read file:", err)
 		return
 	}
-	// TODO differentiate complete ORGDIR FIXME the IF should be a switch
-	// model is not written to storage but to disk directly
-	if identification == shared.IDMODEL {
-		err = ioutil.WriteFile(c.enc.RootPath+"/"+shared.IDMODEL, data, shared.FILEPERMISSIONMODE)
-	} else {
+	// depending on the object type write the file to different locations:
+	switch pm.ObjType {
+	case shared.OtModel:
+		// model is not written to storage but to disk directly
+		path := c.enc.RootPath + "/" + shared.IDMODEL
+		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
+	case shared.OtPeer:
+		// peers are written to disk too, but in correct dir with pm.Name
+		path := c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR + "/" + pm.Name
+		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
+	case shared.OtObject:
 		// write to storage
-		err = c.enc.storage.Store(identification, data)
-	}
-	if err != nil {
-		log.Println("OnFileReceived: storing to storage failed:", err)
+		err = c.enc.storage.Store(pm.Identification, data)
+	default:
+		log.Println("OnFileReceived: unknown ObjType for received file!", pm.ObjType)
 		return
 	}
-	// remove temp file
-	err = os.Remove(path)
+	// this means something failed
 	if err != nil {
-		log.Println("OnFileReceived: failed to remove temp file:", err)
+		log.Println("OnFileReceived: writing file failed:", err)
 		return
 	}
 }

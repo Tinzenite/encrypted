@@ -98,18 +98,9 @@ handlePushMessage handles the logic upon receiving a PushMessage.
 */
 func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage) {
 	// note that file transfer is allowed for when file is received
-	var key string
-	switch pm.ObjType {
-	case shared.OtObject:
-		key = c.buildKey(address, pm.Identification)
-	case shared.OtModel:
-		key = c.buildKey(address, shared.IDMODEL)
-	default:
-		log.Println("handlePushMessage: Invalid ObjType pushed!", pm.ObjType.String())
-		return
-	}
-	// if we reach this, allow
-	c.enc.allowedTransfers[key] = true
+	key := c.buildKey(address, pm.Identification)
+	// if we reach this, allow and store push message too
+	c.enc.allowedTransfers[key] = pm
 }
 
 /*
