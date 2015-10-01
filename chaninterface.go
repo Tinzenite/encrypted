@@ -123,7 +123,6 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 	_, exists := c.enc.allowedTransfers[key]
 	if !exists {
 		log.Println("OnAllowFile: refusing file transfer due to no allowance!")
-		log.Println("DEBUG:", address[:8], name, key)
 		return false, ""
 	}
 	//write to RECEIVINGDIR
@@ -160,16 +159,17 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 		// model is not written to storage but to disk directly
 		path := c.enc.RootPath + "/" + shared.IDMODEL
 		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
+		// log.Println("DEBUG: wrote model.")
 	case shared.OtPeer:
-		log.Println("DEBUG: peer:", pm.Identification)
 		// peers are written to disk too, but in correct dir with pm.Name
 		path := c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR + "/" + pm.Identification
 		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
+		// log.Println("DEBUG: wrote peer.")
 	case shared.OtAuth:
-		log.Println("DEBUG: auth:", pm.Identification)
 		// auth is also special case
 		path := c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.AUTHJSON
 		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
+		// log.Println("DEBUG: wrote auth.")
 	case shared.OtObject:
 		// write to storage
 		err = c.enc.storage.Store(pm.Identification, data)

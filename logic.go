@@ -115,7 +115,6 @@ func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage
 	// notify that we have received the push message
 	rm := shared.CreateRequestMessage(pm.ObjType, pm.Identification)
 	c.enc.channel.Send(address, rm.JSON())
-	log.Println("DEBUG: responded.")
 }
 
 /*
