@@ -15,6 +15,11 @@ includes allowing or disallowing a lock for a specific time frame.
 func (c *chaninterface) handleLockMessage(address string, lm *shared.LockMessage) {
 	switch lm.Action {
 	case shared.LoRequest:
+		if c.enc.isLockedAddress(address) {
+			// we catch this to avoid having peers trying to sync multiple times at the same time
+			log.Println("Relock tried for same address, ignoring!")
+			return
+		}
 		if c.enc.setLock(address) {
 			// if successful notify peer of success
 			accept := shared.CreateLockMessage(shared.LoAccept)
@@ -53,6 +58,12 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 		// model is read from specially named file
 		data, err = ioutil.ReadFile(c.enc.RootPath + "/" + shared.IDMODEL)
 		identification = shared.IDMODEL
+	case shared.OtPeer:
+		data, err = ioutil.ReadFile(c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR + "/" + rm.Identification)
+		identification = rm.Identification
+	case shared.OtAuth:
+		data, err = ioutil.ReadFile(c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.AUTHJSON)
+		identification = rm.Identification
 	default:
 		log.Println("handleRequestMessage: Invalid ObjType requested!", rm.ObjType.String())
 		return

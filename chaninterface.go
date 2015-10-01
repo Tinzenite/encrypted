@@ -77,9 +77,6 @@ func (c *chaninterface) OnMessage(address, message string) {
 				log.Println("OnMessage: failed to parse JSON!", err)
 				return
 			}
-			if msg == nil {
-				log.Println("WHY?")
-			}
 			c.handlePushMessage(address, msg)
 		default:
 			log.Println("OnMessage: WARNING: Unknown object received:", msgType.String())
@@ -92,7 +89,7 @@ func (c *chaninterface) OnMessage(address, message string) {
 	switch message {
 	case "push":
 		log.Println("Sending example push message.")
-		pm := shared.CreatePushMessage("ID_HERE", "NAME_HERE", shared.OtObject)
+		pm := shared.CreatePushMessage("ID_HERE", shared.OtObject)
 		c.enc.channel.Send(address, pm.JSON())
 	case "lock":
 		log.Println("Sending example lock message.")
@@ -165,7 +162,7 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
 	case shared.OtPeer:
 		// peers are written to disk too, but in correct dir with pm.Name
-		path := c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR + "/" + pm.Name
+		path := c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR + "/" + pm.Identification
 		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
 	case shared.OtAuth:
 		// auth is also special case
