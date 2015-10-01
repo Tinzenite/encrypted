@@ -112,6 +112,10 @@ func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage
 	key := c.buildKey(address, pm.Identification)
 	// if we reach this, allow and store push message too
 	c.enc.allowedTransfers[key] = pm
+	// notify that we have received the push message
+	rm := shared.CreateRequestMessage(pm.ObjType, pm.Identification)
+	c.enc.channel.Send(address, rm.JSON())
+	log.Println("DEBUG: responded.")
 }
 
 /*

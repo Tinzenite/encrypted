@@ -161,10 +161,12 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 		path := c.enc.RootPath + "/" + shared.IDMODEL
 		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
 	case shared.OtPeer:
+		log.Println("DEBUG: peer:", pm.Identification)
 		// peers are written to disk too, but in correct dir with pm.Name
 		path := c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR + "/" + pm.Identification
 		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
 	case shared.OtAuth:
+		log.Println("DEBUG: auth:", pm.Identification)
 		// auth is also special case
 		path := c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.AUTHJSON
 		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
