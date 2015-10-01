@@ -218,7 +218,6 @@ func (enc *Encrypted) updatePeers() error {
 		// ignore other encrypted peers (there are no operations we can do with them yet)
 		if !peer.Trusted {
 			// TODO: why CAN'T encrypted peers sync each other? They can just update their encrypted states accordingly... FIXME
-			log.Println("DEBUG: ignoring other encrypted peer on peerUpdate!", peer.Address[:8])
 			continue
 		}
 		// tox will return an error if the address has already been added, so we just ignore it
