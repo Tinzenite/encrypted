@@ -25,7 +25,9 @@ func (c *chaninterface) handleLockMessage(address string, lm *shared.LockMessage
 			accept := shared.CreateLockMessage(shared.LoAccept)
 			c.enc.channel.Send(address, accept.JSON())
 		}
-		// if not successful we don't do anything, peer will retry
+		// if not successful send release to signify that peer has no lock
+		deny := shared.CreateLockMessage(shared.LoRelease)
+		c.enc.channel.Send(address, deny.JSON())
 		return
 	case shared.LoRelease:
 		if c.enc.isLockedAddress(address) {
