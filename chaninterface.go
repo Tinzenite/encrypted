@@ -5,13 +5,15 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
+	"sync"
 
 	"github.com/tinzenite/shared"
 )
 
 type chaninterface struct {
-	// reference back to encrypted
-	enc *Encrypted
+	enc   *Encrypted // reference back to encrypted
+	mutex sync.Mutex // required for map of incomming stuff
 }
 
 func createChanInterface(enc *Encrypted) *chaninterface {
@@ -140,6 +142,10 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 		if err != nil {
 			log.Println("OnFileReceived: failed to remove temp file:", err)
 		}
+		// remove from allowedTransfers
+		c.mutex.Lock()
+		delete(c.enc.allowedTransfers, name)
+		c.mutex.Unlock()
 	}()
 	// fetch push message for file
 	pm, exists := c.enc.allowedTransfers[name]
@@ -196,6 +202,17 @@ func (c *chaninterface) OnFileCanceled(address, path string) {
 		log.Println("OnFileCanceled: failed to remove temp file:", err)
 		return
 	}
+	// get name of file, aka key
+	list := strings.Split(path, "/")
+	i := len(list) - 1
+	if i < 0 {
+		i = 0
+	}
+	name := list[i]
+	// remove from allowedTransfers
+	c.mutex.Lock()
+	delete(c.enc.allowedTransfers, name)
+	c.mutex.Unlock()
 }
 
 /*
