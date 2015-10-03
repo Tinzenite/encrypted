@@ -117,7 +117,7 @@ func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage
 	key := c.buildKey(address, pm.Identification)
 	// if we reach this, allow and store push message too
 	c.mutex.Lock()
-	c.enc.allowedTransfers[key] = pm
+	c.allowedTransfers[key] = *pm
 	c.mutex.Unlock()
 	// notify that we have received the push message
 	rm := shared.CreateRequestMessage(pm.ObjType, pm.Identification)

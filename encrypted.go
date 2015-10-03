@@ -16,17 +16,16 @@ import (
 Encrypted is the object which is used to control the encrypted Tinzenite peer.
 */
 type Encrypted struct {
-	RootPath         string
-	Peer             *shared.Peer
-	storage          Storage                        // storage to use for writing and reading data
-	isLocked         bool                           // is Encrypted currently locked?
-	lockedSince      *time.Time                     // time since Encrypted is locked.
-	lockedAddress    string                         // the address locked to
-	allowedTransfers map[string]*shared.PushMessage // storage for allowed uploads to encrypted
-	cInterface       *chaninterface
-	channel          *channel.Channel
-	wg               sync.WaitGroup
-	stop             chan bool
+	RootPath      string
+	Peer          *shared.Peer
+	storage       Storage    // storage to use for writing and reading data
+	isLocked      bool       // is Encrypted currently locked?
+	lockedSince   *time.Time // time since Encrypted is locked.
+	lockedAddress string     // the address locked to
+	cInterface    *chaninterface
+	channel       *channel.Channel
+	wg            sync.WaitGroup
+	stop          chan bool
 }
 
 /*
@@ -98,14 +97,16 @@ func (enc *Encrypted) ClearLock() {
 	log.Println("Encrypted: released from", address[:8])
 	//clean up any outstanding file transfers for cleared address (but not running ones!)
 	var toRemove []string
-	for key := range enc.allowedTransfers {
+	enc.cInterface.mutex.Lock()
+	for key := range enc.cInterface.allowedTransfers {
 		if strings.HasPrefix(key, address) {
 			toRemove = append(toRemove, key)
 		}
 	}
 	for _, key := range toRemove {
-		delete(enc.allowedTransfers, key)
+		delete(enc.cInterface.allowedTransfers, key)
 	}
+	enc.cInterface.mutex.Unlock()
 }
 
 /*

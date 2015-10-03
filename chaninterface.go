@@ -12,13 +12,15 @@ import (
 )
 
 type chaninterface struct {
-	enc   *Encrypted // reference back to encrypted
-	mutex sync.Mutex // required for map of incomming stuff
+	enc              *Encrypted                    // reference back to encrypted
+	allowedTransfers map[string]shared.PushMessage // storage for allowed uploads to encrypted
+	mutex            sync.Mutex                    // required for map of incomming stuff
 }
 
 func createChanInterface(enc *Encrypted) *chaninterface {
 	return &chaninterface{
-		enc: enc}
+		enc:              enc,
+		allowedTransfers: make(map[string]shared.PushMessage)}
 }
 
 // ----------------------- Callbacks ------------------------------
@@ -122,7 +124,9 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 	}
 	//check against allowed files and allow if ok
 	key := c.buildKey(address, name)
-	_, exists := c.enc.allowedTransfers[key]
+	c.mutex.Lock()
+	_, exists := c.allowedTransfers[key]
+	c.mutex.Unlock()
 	if !exists {
 		log.Println("OnAllowFile: refusing file transfer due to no allowance!")
 		return false, ""
@@ -144,11 +148,13 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 		}
 		// remove from allowedTransfers
 		c.mutex.Lock()
-		delete(c.enc.allowedTransfers, name)
+		delete(c.allowedTransfers, name)
 		c.mutex.Unlock()
 	}()
 	// fetch push message for file
-	pm, exists := c.enc.allowedTransfers[name]
+	c.mutex.Lock()
+	pm, exists := c.allowedTransfers[name]
+	c.mutex.Unlock()
 	if !exists {
 		log.Println("OnFileReceived: no associated push message found!")
 		return
@@ -211,7 +217,7 @@ func (c *chaninterface) OnFileCanceled(address, path string) {
 	name := list[i]
 	// remove from allowedTransfers
 	c.mutex.Lock()
-	delete(c.enc.allowedTransfers, name)
+	delete(c.allowedTransfers, name)
 	c.mutex.Unlock()
 }
 
