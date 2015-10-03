@@ -72,8 +72,11 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 	}
 	// if error return
 	if err != nil {
-		log.Println("handleRequestMessage: retrieval of", rm.ObjType, "failed:", err)
-		// notify sender that it don't exist
+		// print error only if not model (because missing model signals that this peer is empty)
+		if rm.ObjType != shared.OtModel {
+			log.Println("handleRequestMessage: retrieval of", rm.ObjType, "failed:", err)
+		}
+		// notify sender that it don't exist in any case
 		nm := shared.CreateNotifyMessage(shared.NoMissing, identification)
 		c.enc.channel.Send(address, nm.JSON())
 		return
