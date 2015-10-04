@@ -148,15 +148,11 @@ OnFileReceived is called when a file has been successfully received.
 */
 func (c *chaninterface) OnFileReceived(address, path, name string) {
 	// TODO fix this: NOTE: no lock check so that locks don't have to stay on for long file transfers
-	// FIXME debug: don't remove peer files until we know why wrong data is written to them. Check if temp data is already wrong or not.
-	removeTemp := true
 	// no matter what, remove temp file
 	defer func() {
-		if removeTemp {
-			err := os.Remove(path)
-			if err != nil {
-				log.Println("OnFileReceived: failed to remove temp file:", err)
-			}
+		err := os.Remove(path)
+		if err != nil {
+			log.Println("OnFileReceived: failed to remove temp file:", err)
 		}
 		// remove from allowedTransfers
 		c.mutex.Lock()
@@ -185,7 +181,6 @@ func (c *chaninterface) OnFileReceived(address, path, name string) {
 		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
 		// log.Println("DEBUG: wrote model.")
 	case shared.OtPeer:
-		removeTemp = false
 		// peers are written to disk too, but in correct dir with pm.Name
 		path := c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR + "/" + pm.Identification
 		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
