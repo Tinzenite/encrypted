@@ -91,6 +91,7 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 	}
 	// send file
 	err = c.enc.channel.SendFile(address, filePath, rm.Identification, func(success bool) {
+		// FIXME file is removed... :P When everything works remove file no matter what
 		// if NOT success, log and keep file for debugging
 		if !success {
 			log.Println("handleRequestMessage: Failed to send file on request!", filePath)
@@ -122,6 +123,23 @@ func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage
 	// notify that we have received the push message
 	rm := shared.CreateRequestMessage(pm.ObjType, pm.Identification)
 	c.enc.channel.Send(address, rm.JSON())
+}
+
+/*
+handleNotifyMessage handles the logic upon receiving a NotifyMessage.
+*/
+func (c *chaninterface) handleNotifyMessage(address string, nm *shared.NotifyMessage) {
+	switch nm.Notify {
+	case shared.NoRemoved:
+		// TODO notify message must ALSO differentiate types... for now just remove from storage
+		log.Println("DEBUG: removing", nm.Identification)
+		err := c.enc.storage.Store(nm.Identification, nil)
+		if err != nil {
+			log.Println("handleNotifyMessage: failed to write removal to storage:", err)
+		}
+	default:
+		log.Println("handleNotifyMessage: unknown notify type:", nm.Notify)
+	}
 }
 
 /*
