@@ -9,4 +9,6 @@ type Storage interface {
 	Store(key string, data []byte) error
 	/*Retrieve fetches the data for a key.*/
 	Retrieve(key string) ([]byte, error)
+	/*Remove is called to remove a key and associated data from storage.*/
+	Remove(key string) error
 }

@@ -132,10 +132,9 @@ func (c *chaninterface) handleNotifyMessage(address string, nm *shared.NotifyMes
 	switch nm.Notify {
 	case shared.NoRemoved:
 		// TODO notify message must ALSO differentiate types... for now just remove from storage
-		log.Println("DEBUG: removing", nm.Identification)
-		err := c.enc.storage.Store(nm.Identification, nil)
+		err := c.enc.storage.Remove(nm.Identification)
 		if err != nil {
-			log.Println("handleNotifyMessage: failed to write removal to storage:", err)
+			log.Println("handleNotifyMessage: failed to remove from storage:", err)
 		}
 	default:
 		log.Println("handleNotifyMessage: unknown notify type:", nm.Notify)
