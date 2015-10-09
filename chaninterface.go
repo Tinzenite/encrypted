@@ -6,18 +6,21 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/tinzenite/shared"
 )
 
 type chaninterface struct {
-	// reference back to encrypted
-	enc *Encrypted
+	enc              *Encrypted                    // reference back to encrypted
+	allowedTransfers map[string]shared.PushMessage // storage for allowed uploads to encrypted
+	mutex            sync.Mutex                    // required for map of incomming stuff
 }
 
 func createChanInterface(enc *Encrypted) *chaninterface {
 	return &chaninterface{
-		enc: enc}
+		enc:              enc,
+		allowedTransfers: make(map[string]shared.PushMessage)}
 }
 
 // ----------------------- Callbacks ------------------------------
@@ -79,6 +82,14 @@ func (c *chaninterface) OnMessage(address, message string) {
 				return
 			}
 			c.handlePushMessage(address, msg)
+		case shared.MsgNotify:
+			msg := &shared.NotifyMessage{}
+			err := json.Unmarshal([]byte(message), msg)
+			if err != nil {
+				log.Println("OnMessage: failed to parse JSON!", err)
+				return
+			}
+			c.handleNotifyMessage(address, msg)
 		default:
 			log.Println("OnMessage: WARNING: Unknown object received:", msgType.String())
 		}
@@ -121,7 +132,9 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 	}
 	//check against allowed files and allow if ok
 	key := c.buildKey(address, name)
-	_, exists := c.enc.allowedTransfers[key]
+	c.mutex.Lock()
+	_, exists := c.allowedTransfers[key]
+	c.mutex.Unlock()
 	if !exists {
 		log.Println("OnAllowFile: refusing file transfer due to no allowance!")
 		return false, ""
@@ -134,31 +147,59 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 OnFileReceived is called when a file has been successfully received.
 */
 func (c *chaninterface) OnFileReceived(address, path, name string) {
-	// note: no lock check so that locks don't have to stay on for long file transfers
-	// need to read id so that we can write it to the correct location
-	identification := strings.Split(name, ":")[1]
+	// TODO fix this: NOTE: no lock check so that locks don't have to stay on for long file transfers
+	// no matter what, remove temp file
+	defer func() {
+		err := os.Remove(path)
+		if err != nil {
+			log.Println("OnFileReceived: failed to remove temp file:", err)
+		}
+		// remove from allowedTransfers
+		c.mutex.Lock()
+		delete(c.allowedTransfers, name)
+		c.mutex.Unlock()
+	}()
+	// fetch push message for file
+	c.mutex.Lock()
+	pm, exists := c.allowedTransfers[name]
+	c.mutex.Unlock()
+	if !exists {
+		log.Println("OnFileReceived: no associated push message found!")
+		return
+	}
 	// read data
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Println("OnFileReceived: failed to read file:", err)
 		return
 	}
-	// TODO differentiate complete ORGDIR FIXME the IF should be a switch
-	// model is not written to storage but to disk directly
-	if identification == shared.IDMODEL {
-		err = ioutil.WriteFile(c.enc.RootPath+"/"+shared.IDMODEL, data, shared.FILEPERMISSIONMODE)
-	} else {
+	// depending on the object type write the file to different locations:
+	switch pm.ObjType {
+	case shared.OtModel:
+		// model is not written to storage but to disk directly
+		path := c.enc.RootPath + "/" + shared.IDMODEL
+		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
+		// log.Println("DEBUG: wrote model.")
+	case shared.OtPeer:
+		// peers are written to disk too, but in correct dir with pm.Name
+		path := c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR + "/" + pm.Identification
+		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
+		// log.Println("DEBUG: wrote peer.")
+	case shared.OtAuth:
+		// auth is also special case
+		path := c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.AUTHJSON
+		err = ioutil.WriteFile(path, data, shared.FILEPERMISSIONMODE)
+		// log.Println("DEBUG: wrote auth.")
+	case shared.OtObject:
 		// write to storage
-		err = c.enc.storage.Store(identification, data)
-	}
-	if err != nil {
-		log.Println("OnFileReceived: storing to storage failed:", err)
+		err = c.enc.storage.Store(pm.Identification, data)
+	default:
+		log.Println("OnFileReceived: unknown ObjType for received file!", pm.ObjType)
 		return
 	}
-	// remove temp file
-	err = os.Remove(path)
+	// this means something failed
 	if err != nil {
-		log.Println("OnFileReceived: failed to remove temp file:", err)
+		log.Println("OnFileReceived: writing file failed:", err)
 		return
 	}
 }
@@ -175,6 +216,17 @@ func (c *chaninterface) OnFileCanceled(address, path string) {
 		log.Println("OnFileCanceled: failed to remove temp file:", err)
 		return
 	}
+	// get name of file, aka key
+	list := strings.Split(path, "/")
+	i := len(list) - 1
+	if i < 0 {
+		i = 0
+	}
+	name := list[i]
+	// remove from allowedTransfers
+	c.mutex.Lock()
+	delete(c.allowedTransfers, name)
+	c.mutex.Unlock()
 }
 
 /*

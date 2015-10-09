@@ -15,12 +15,19 @@ includes allowing or disallowing a lock for a specific time frame.
 func (c *chaninterface) handleLockMessage(address string, lm *shared.LockMessage) {
 	switch lm.Action {
 	case shared.LoRequest:
+		if c.enc.isLockedAddress(address) {
+			// we catch this to avoid having peers trying to sync multiple times at the same time
+			log.Println("Relock tried for same address, ignoring!")
+			return
+		}
 		if c.enc.setLock(address) {
 			// if successful notify peer of success
 			accept := shared.CreateLockMessage(shared.LoAccept)
 			c.enc.channel.Send(address, accept.JSON())
 		}
-		// if not successful we don't do anything, peer will retry
+		// if not successful send release to signify that peer has no lock
+		deny := shared.CreateLockMessage(shared.LoRelease)
+		c.enc.channel.Send(address, deny.JSON())
 		return
 	case shared.LoRelease:
 		if c.enc.isLockedAddress(address) {
@@ -53,14 +60,23 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 		// model is read from specially named file
 		data, err = ioutil.ReadFile(c.enc.RootPath + "/" + shared.IDMODEL)
 		identification = shared.IDMODEL
+	case shared.OtPeer:
+		data, err = ioutil.ReadFile(c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR + "/" + rm.Identification)
+		identification = rm.Identification
+	case shared.OtAuth:
+		data, err = ioutil.ReadFile(c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.AUTHJSON)
+		identification = rm.Identification
 	default:
 		log.Println("handleRequestMessage: Invalid ObjType requested!", rm.ObjType.String())
 		return
 	}
 	// if error return
 	if err != nil {
-		log.Println("handleRequestMessage: retrieval of", rm.ObjType, "failed:", err)
-		// notify sender that it don't exist
+		// print error only if not model (because missing model signals that this peer is empty)
+		if rm.ObjType != shared.OtModel {
+			log.Println("handleRequestMessage: retrieval of", rm.ObjType, "failed:", err)
+		}
+		// notify sender that it don't exist in any case
 		nm := shared.CreateNotifyMessage(shared.NoMissing, identification)
 		c.enc.channel.Send(address, nm.JSON())
 		return
@@ -75,6 +91,7 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 	}
 	// send file
 	err = c.enc.channel.SendFile(address, filePath, rm.Identification, func(success bool) {
+		// FIXME file is removed... :P When everything works remove file no matter what
 		// if NOT success, log and keep file for debugging
 		if !success {
 			log.Println("handleRequestMessage: Failed to send file on request!", filePath)
@@ -98,18 +115,30 @@ handlePushMessage handles the logic upon receiving a PushMessage.
 */
 func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage) {
 	// note that file transfer is allowed for when file is received
-	var key string
-	switch pm.ObjType {
-	case shared.OtObject:
-		key = c.buildKey(address, pm.Identification)
-	case shared.OtModel:
-		key = c.buildKey(address, shared.IDMODEL)
+	key := c.buildKey(address, pm.Identification)
+	// if we reach this, allow and store push message too
+	c.mutex.Lock()
+	c.allowedTransfers[key] = *pm
+	c.mutex.Unlock()
+	// notify that we have received the push message
+	rm := shared.CreateRequestMessage(pm.ObjType, pm.Identification)
+	c.enc.channel.Send(address, rm.JSON())
+}
+
+/*
+handleNotifyMessage handles the logic upon receiving a NotifyMessage.
+*/
+func (c *chaninterface) handleNotifyMessage(address string, nm *shared.NotifyMessage) {
+	switch nm.Notify {
+	case shared.NoRemoved:
+		// TODO notify message must ALSO differentiate types... for now just remove from storage
+		err := c.enc.storage.Remove(nm.Identification)
+		if err != nil {
+			log.Println("handleNotifyMessage: failed to remove from storage:", err)
+		}
 	default:
-		log.Println("handlePushMessage: Invalid ObjType pushed!", pm.ObjType.String())
-		return
+		log.Println("handleNotifyMessage: unknown notify type:", nm.Notify)
 	}
-	// if we reach this, allow
-	c.enc.allowedTransfers[key] = true
 }
 
 /*
