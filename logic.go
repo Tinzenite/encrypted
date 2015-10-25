@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/tinzenite/channel"
 	"github.com/tinzenite/shared"
 )
 
@@ -89,11 +90,10 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 		log.Println("handleRequestMessage: failed to write data to SEDIR:", err)
 		return
 	}
-	// send file
-	err = c.enc.channel.SendFile(address, filePath, rm.Identification, func(success bool) {
-		// FIXME file is removed... :P When everything works remove file no matter what
+	// function for when done with transfer
+	onComplete := func(status channel.State) {
 		// if NOT success, log and keep file for debugging
-		if !success {
+		if status != channel.StSuccess {
 			log.Println("handleRequestMessage: Failed to send file on request!", filePath)
 			return
 		}
@@ -103,7 +103,9 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 			log.Println("handleRequestMessage: failed to remove temp file:", err)
 			return
 		}
-	})
+	}
+	// send file
+	err = c.enc.channel.SendFile(address, filePath, rm.Identification, onComplete)
 	// if error log
 	if err != nil {
 		log.Println("handleRequestMessage: SendFile returned error:", err)
