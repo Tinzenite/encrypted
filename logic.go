@@ -53,7 +53,6 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 	// check file type and fetch data accordingly
 	switch rm.ObjType {
 	case shared.OtObject:
-		// TODO differentiate ORGDIR from path? how? we don't have it... :( FIXME: add more special ID____ things
 		// fetch data for normal objects from storage
 		data, err = c.enc.storage.Retrieve(rm.Identification)
 		identification = rm.Identification
@@ -133,7 +132,7 @@ handleNotifyMessage handles the logic upon receiving a NotifyMessage.
 func (c *chaninterface) handleNotifyMessage(address string, nm *shared.NotifyMessage) {
 	switch nm.Notify {
 	case shared.NoRemoved:
-		// TODO notify message must ALSO differentiate types... for now just remove from storage
+		// TODO notify message must ALSO differentiate types... for now just try to remove from storage
 		err := c.enc.storage.Remove(nm.Identification)
 		if err != nil {
 			log.Println("handleNotifyMessage: failed to remove from storage:", err)

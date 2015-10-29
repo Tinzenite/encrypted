@@ -30,14 +30,7 @@ OnFriendRequest is called when a friend request is received. Due to the nature
 of the encrypted peer, it will NEVER accept friend requests.
 */
 func (c *chaninterface) OnFriendRequest(address, message string) {
-	// for now only accept connection from myself for testing
-	if address[:8] == "ed284a9f" || address[:8] == "866ba1b5" {
-		// TODO remove once done debugging / "dev"-ing
-		log.Println("OnFriendRequest: Accepting connection from root.")
-		c.enc.channel.AcceptConnection(address)
-		return
-	}
-	// TODO usually encrypted should NEVER accept a friend request
+	//  encrypted should NEVER accept a friend request
 	log.Println("OnFriendRequest: Connection request from", address[:8]+", ignoring!")
 }
 
@@ -147,7 +140,7 @@ func (c *chaninterface) OnAllowFile(address, name string) (bool, string) {
 OnFileReceived is called when a file has been successfully received.
 */
 func (c *chaninterface) OnFileReceived(address, path, name string) {
-	// TODO fix this: NOTE: no lock check so that locks don't have to stay on for long file transfers
+	// NOTE: no lock check so that locks don't have to stay on for long file transfers
 	// no matter what, remove temp file
 	defer func() {
 		err := os.Remove(path)
