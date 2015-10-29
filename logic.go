@@ -103,6 +103,7 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 			return
 		}
 	}
+	log.Println("Sending", rm.Identification)
 	// send file
 	err = c.enc.channel.SendFile(address, filePath, rm.Identification, onComplete)
 	// if error log
@@ -121,6 +122,7 @@ func (c *chaninterface) handlePushMessage(address string, pm *shared.PushMessage
 	c.mutex.Lock()
 	c.allowedTransfers[key] = *pm
 	c.mutex.Unlock()
+	log.Println("Receiving", pm.Identification)
 	// notify that we have received the push message
 	rm := shared.CreateRequestMessage(pm.ObjType, pm.Identification)
 	c.enc.channel.Send(address, rm.JSON())
