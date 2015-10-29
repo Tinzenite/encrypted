@@ -77,7 +77,7 @@ func (c *chaninterface) handleRequestMessage(address string, rm *shared.RequestM
 			log.Println("handleRequestMessage: retrieval of", rm.ObjType, "failed:", err)
 		}
 		// notify sender that it don't exist in any case
-		nm := shared.CreateNotifyMessage(shared.NoMissing, identification)
+		nm := shared.CreateNotifyMessage(shared.NoMissing, identification, rm.ObjType)
 		c.enc.channel.Send(address, nm.JSON())
 		return
 	}
@@ -132,10 +132,19 @@ handleNotifyMessage handles the logic upon receiving a NotifyMessage.
 func (c *chaninterface) handleNotifyMessage(address string, nm *shared.NotifyMessage) {
 	switch nm.Notify {
 	case shared.NoRemoved:
-		// TODO notify message must ALSO differentiate types... for now just try to remove from storage
-		err := c.enc.storage.Remove(nm.Identification)
+		// notify message must ALSO differentiate types
+		var err error
+		switch nm.ObjType {
+		case shared.OtAuth:
+			err = os.Remove(c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.AUTHJSON)
+		case shared.OtPeer:
+			err = os.Remove(c.enc.RootPath + "/" + shared.ORGDIR + "/" + shared.PEERSDIR + "/" + nm.Identification)
+		default:
+			err = c.enc.storage.Remove(nm.Identification)
+		}
+		// if error log
 		if err != nil {
-			log.Println("handleNotifyMessage: failed to remove from storage:", err)
+			log.Println("handleNotifyMessage: failed to remove type", nm.ObjType.String(), "since:", err)
 		}
 	default:
 		log.Println("handleNotifyMessage: unknown notify type:", nm.Notify)
